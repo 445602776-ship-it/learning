@@ -135,8 +135,8 @@ with tab1:
     if side == "采购侧（P2P）":
         g = graphviz.Digraph()
         g.attr(rankdir="LR", bgcolor="transparent")
-        g.attr("node", fontname="Microsoft YaHei", fontsize="11")
-        g.attr("edge", fontname="Microsoft YaHei")
+        g.attr("node", fontname="Microsoft YaHei", fontsize="12", color="#333333")
+        g.attr("edge", fontname="Microsoft YaHei", color="#FF6600", penwidth="2.5", arrowsize="1.2")
 
         # 合同层
         with g.subgraph(name="cluster_contract") as c:
@@ -174,7 +174,8 @@ with tab1:
     else:
         g = graphviz.Digraph()
         g.attr(rankdir="LR", bgcolor="transparent")
-        g.attr("node", fontname="Microsoft YaHei", fontsize="11")
+        g.attr("node", fontname="Microsoft YaHei", fontsize="12", color="#333333")
+        g.attr("edge", fontname="Microsoft YaHei", color="#FF6600", penwidth="2.5", arrowsize="1.2")
 
         with g.subgraph(name="cluster_contract") as c:
             c.attr(label="合同层", style="dashed", color="#8888CC")
