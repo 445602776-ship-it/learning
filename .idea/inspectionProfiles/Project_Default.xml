@@ -1,0 +1,21 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="python-office" />
+          <option value="pyscreenshot" />
+          <option value="pywin32" />
+          <option value="pywinauto" />
+          <option value="schedule" />
+          <option value="uiautomation" />
+          <option value="xlwt" />
+          <option value="PySide6" />
+          <option value="PySide6_Addons" />
+          <option value="PySide6_Essentials" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
