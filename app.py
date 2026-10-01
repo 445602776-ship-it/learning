@@ -1,12 +1,12 @@
 import streamlit as st
 
 st.set_page_config(
-    page_title="信用管理学习应用",
+    page_title="信用管理学习工具",
     page_icon="📚",
     layout="wide"
 )
 
-st.title("📚 信用管理学习应用")
+st.title("📚 信用管理学习工具")
 st.markdown("""
 
 **左侧导航**：
