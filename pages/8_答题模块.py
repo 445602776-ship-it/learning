@@ -173,8 +173,25 @@ for i, q in enumerate(quiz_questions):
 
     # 练习模式或已交卷：显示对错
     if submitted or (is_practice and qid in quiz_answers):
-        correct = str(q["正确答案"]).strip().upper()
-        user = str(quiz_answers.get(qid, "")).strip().upper()
+        # === 核心修改：对答案进行脱敏清洗，解决空格、大小写、全半角问题 ===
+        def clean_ans(ans):
+            if pd.isna(ans): return ""
+            ans = str(ans).strip().upper()  # 去首尾空格并转大写
+            ans = ans.replace(" ", "").replace("　", "")  # 去所有空格（含全角）
+            if ans in ["正确", "对", "是", "TRUE", "T", "√"]: return "对"
+            if ans in ["错误", "错", "否", "FALSE", "F", "×"]: return "错"
+            return ans
+
+
+        correct = clean_ans(q["正确答案"])
+        user = clean_ans(quiz_answers.get(qid, ""))
+
+        if user == correct and user != "":
+            st.success(f"✅ 回答正确！正确答案：{q['正确答案']}")
+        else:
+            st.error(f"❌ 回答错误。你的答案：{quiz_answers.get(qid, '未作答')}　正确答案：{q['正确答案']}")
+        st.info(f"💡 解析：{q['解析']}")
+        st.caption(f"📖 来源：{q['来源']}")
 
         # 判断题不需要 upper
         if qtype == "判断":
@@ -209,19 +226,22 @@ if submitted:
 
     for q in quiz_questions:
         qid = q["题号"]
-        qtype = q["题型"]
-        correct = str(q["正确答案"]).strip()
-        user = str(quiz_answers.get(qid, "")).strip()
 
-        # 单选/多选做 upper 比较
-        if qtype in ["单选", "多选"]:
-            correct_cmp = correct.upper()
-            user_cmp = user.upper()
-        else:
-            correct_cmp = correct
-            user_cmp = user
 
-        if user_cmp == correct_cmp and user != "":
+        # === 核心修改：成绩单也使用同样的脱敏逻辑 ===
+        def clean_ans(ans):
+            if pd.isna(ans): return ""
+            ans = str(ans).strip().upper()
+            ans = ans.replace(" ", "").replace("　", "")
+            if ans in ["正确", "对", "是", "TRUE", "T", "√"]: return "对"
+            if ans in ["错误", "错", "否", "FALSE", "F", "×"]: return "错"
+            return ans
+
+
+        correct_cmp = clean_ans(q["正确答案"])
+        user_cmp = clean_ans(quiz_answers.get(qid, ""))
+
+        if user_cmp == correct_cmp and user_cmp != "":
             correct_count += 1
         else:
             wrong_list.append({
