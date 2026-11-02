@@ -28,19 +28,15 @@ with st.sidebar:
 
     mode = st.radio("答题模式", ["练习模式（即时反馈）", "考试模式（交卷后反馈）"])
 
-    # 分类筛选
     categories = ["全部"] + sorted(quiz["分类"].unique().tolist())
     selected_category = st.selectbox("分类", categories)
 
-    # 题型筛选
     qtypes = ["全部"] + sorted(quiz["题型"].unique().tolist())
     selected_qtype = st.selectbox("题型", qtypes)
 
-    # 难度筛选
     difficulties = ["全部"] + sorted(quiz["难度"].unique().tolist())
     selected_difficulty = st.selectbox("难度", difficulties)
 
-    # 题目数量
     max_count = len(quiz)
     count = st.slider("题目数量", min_value=5, max_value=min(50, max_count), value=10)
 
@@ -68,7 +64,7 @@ if start:
         st.session_state["quiz_answers"] = {}
         st.session_state["quiz_submitted"] = False
         st.session_state["quiz_mode"] = "练习" if "练习" in mode else "考试"
-
+        st.rerun()
 
 # ==================== 答题区 ====================
 if "quiz_questions" not in st.session_state:
@@ -102,14 +98,12 @@ for i, q in enumerate(quiz_questions):
     st.markdown(f"**第 {i+1} 题**  ·  {qtype}  ·  {q['难度']}  ·  {q['分类']}")
     st.markdown(f"**{q['题干']}**")
 
-    # 选项准备
     options = []
     for letter in ["A", "B", "C", "D"]:
         opt = str(q.get(f"选项{letter}", "")).strip()
         if opt:
             options.append((letter, opt))
 
-    # 单选题
     if qtype == "单选":
         labels = ["请选择"] + [f"{letter}. {opt}" for letter, opt in options]
         key = f"radio_{qid}"
@@ -125,11 +119,10 @@ for i, q in enumerate(quiz_questions):
         if answer and answer != "请选择" and not disabled:
             quiz_answers[qid] = answer[0]
 
-    # 多选题
     elif qtype == "多选":
         labels = [f"{letter}. {opt}" for letter, opt in options]
         key = f"multi_{qid}"
-        disabled = submitted  # ← 关键修改：只在提交后禁用
+        disabled = submitted
 
         answer = st.multiselect(
             f"选择_{qid}",
@@ -141,14 +134,13 @@ for i, q in enumerate(quiz_questions):
         if answer and not disabled:
             quiz_answers[qid] = "".join(sorted([a[0] for a in answer]))
 
-    # 判断题
     elif qtype == "判断":
         key = f"judge_{qid}"
-        disabled = submitted  # ← 关键修改
+        disabled = submitted
 
         answer = st.radio(
             f"判断_{qid}",
-            ["请选择", "对", "错"],  # ← 关键修改：加占位项
+            ["请选择", "对", "错"],
             key=key,
             disabled=disabled,
             horizontal=True,
@@ -157,10 +149,9 @@ for i, q in enumerate(quiz_questions):
         if answer and answer != "请选择" and not disabled:
             quiz_answers[qid] = answer
 
-    # 填空题
     elif qtype == "填空":
         key = f"fill_{qid}"
-        disabled = submitted or (is_practice and qid in quiz_answers)
+        disabled = submitted
 
         answer = st.text_input(
             f"填空_{qid}",
@@ -173,15 +164,13 @@ for i, q in enumerate(quiz_questions):
 
     # 练习模式或已交卷：显示对错
     if submitted or (is_practice and qid in quiz_answers):
-        # === 核心修改：对答案进行脱敏清洗，解决空格、大小写、全半角问题 ===
         def clean_ans(ans):
             if pd.isna(ans): return ""
-            ans = str(ans).strip().upper()  # 去首尾空格并转大写
-            ans = ans.replace(" ", "").replace("　", "")  # 去所有空格（含全角）
+            ans = str(ans).strip().upper()
+            ans = ans.replace(" ", "").replace("　", "")
             if ans in ["正确", "对", "是", "TRUE", "T", "√"]: return "对"
             if ans in ["错误", "错", "否", "FALSE", "F", "×"]: return "错"
             return ans
-
 
         correct = clean_ans(q["正确答案"])
         user = clean_ans(quiz_answers.get(qid, ""))
@@ -193,28 +182,12 @@ for i, q in enumerate(quiz_questions):
         st.info(f"💡 解析：{q['解析']}")
         st.caption(f"📖 来源：{q['来源']}")
 
-        # 判断题不需要 upper
-        if qtype == "判断":
-            correct = str(q["正确答案"]).strip()
-            user = str(quiz_answers.get(qid, "")).strip()
-        # 填空题不强转大写
-        if qtype == "填空":
-            correct = str(q["正确答案"]).strip()
-            user = str(quiz_answers.get(qid, "")).strip()
-
-        if user == correct:
-            st.success(f"✅ 回答正确！正确答案：{q['正确答案']}")
-        else:
-            st.error(f"❌ 回答错误。你的答案：{quiz_answers.get(qid, '未作答')}　正确答案：{q['正确答案']}")
-        st.info(f"💡 解析：{q['解析']}")
-        st.caption(f"📖 来源：{q['来源']}")
-
 # ==================== 提交按钮 ====================
 if not submitted:
     st.markdown("---")
     if st.button("📤 提交答卷", type="primary", use_container_width=True):
         st.session_state["quiz_submitted"] = True
-
+        st.rerun()
 
 # ==================== 成绩单 ====================
 if submitted:
@@ -226,22 +199,21 @@ if submitted:
 
     for q in quiz_questions:
         qid = q["题号"]
+        qtype = q["题型"]
+        correct = str(q["正确答案"]).strip()
+        user = str(quiz_answers.get(qid, "")).strip()
 
+        if qtype in ["单选", "多选"]:
+            correct_cmp = correct.upper()
+            user_cmp = user.upper()
+        elif qtype == "判断":
+            correct_cmp = "对" if correct in ["对", "正确", "是"] else "错"
+            user_cmp = "对" if user in ["对", "正确", "是"] else "错"
+        else:
+            correct_cmp = correct
+            user_cmp = user
 
-        # === 核心修改：成绩单也使用同样的脱敏逻辑 ===
-        def clean_ans(ans):
-            if pd.isna(ans): return ""
-            ans = str(ans).strip().upper()
-            ans = ans.replace(" ", "").replace("　", "")
-            if ans in ["正确", "对", "是", "TRUE", "T", "√"]: return "对"
-            if ans in ["错误", "错", "否", "FALSE", "F", "×"]: return "错"
-            return ans
-
-
-        correct_cmp = clean_ans(q["正确答案"])
-        user_cmp = clean_ans(quiz_answers.get(qid, ""))
-
-        if user_cmp == correct_cmp and user_cmp != "":
+        if user_cmp == correct_cmp and user != "":
             correct_count += 1
         else:
             wrong_list.append({
@@ -275,13 +247,11 @@ if submitted:
     else:
         st.warning("📖 还需加强，建议重新学习相关章节。")
 
-    # ==================== 错题本 ====================
     if wrong_list:
         st.subheader("❌ 错题本")
         wrong_df = pd.DataFrame(wrong_list)
         st.dataframe(wrong_df, use_container_width=True)
 
-        # 保存到 session_state
         if st.button("📥 保存错题到错题本"):
             for w in wrong_list:
                 st.session_state["wrong_book"].append({
@@ -293,7 +263,6 @@ if submitted:
         st.balloons()
         st.success("🎊 全部答对！")
 
-    # ==================== 重新答题 ====================
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔄 重新答题", use_container_width=True):
